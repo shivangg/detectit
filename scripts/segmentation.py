@@ -8,25 +8,68 @@ from pcl_helper import *
 # Callback function for your Point Cloud Subscriber
 def pcl_callback(pcl_msg):
 
-    # TODO: Convert ROS msg to PCL data
+    ## TODO: Convert ROS msg to PCL data
 
-    # TODO: Voxel Grid Downsampling
+    cloud = ros_to_pcl(pcl_msg)
 
-    # TODO: PassThrough Filter
+    ## TODO: Voxel Grid Downsampling
+    vox = cloud.make_voxel_grid_filter()
+    LEAF_SIZE = 0.01  
+    vox.set_leaf_size(LEAF_SIZE, LEAF_SIZE, LEAF_SIZE)
+    cloud_filtered = vox.filter()
 
-    # TODO: RANSAC Plane Segmentation
+    ## TODO: PassThrough Filter
 
-    # TODO: Extract inliers and outliers
+    passthrough = cloud_filtered.make_passthrough_filter() 
+    filter_axis = 'z'
+    passthrough.set_filter_field_name(filter_axis)
+    axis_min = 0.5
+    axis_max = 1.2
+    passthrough.set_filter_limits(axis_min, axis_max)
+    cloud_filtered = passthrough.filter()
+
+    ## TODO: RANSAC Plane Segmentation
+
+    seg = cloud_filtered.make_segmenter()
+
+    # set the model which has to be fit
+    seg.set_model_type(pcl.SACMODEL_PLANE)
+    seg.set_method_type(pcl.SAC_RANSAC)
+
+    # max distance for the point to be considered fit
+    max_distance = 0.01
+    seg.set_distance_threshold(max_distance)
+
+    ## TODO: Extract inliers and outliers
+    
+    inliers, coefficients = seg.segment()
+    
+    # Extract inliers
+    extracted_outliers = cloud_filtered.extract(inliers, negative = True)
+    extracted_inliers = cloud_filtered.extract(inliers, negative = False)
+    
+    # finally using the filter to ge the resultant point cloud
+    
+    # RANSAC plane segmentation
+
+    # creating the segmenter object
+    
+
+    # call the segment function to obtain the inlier indices and model coefficients
+    
 
     # TODO: Euclidean Clustering
 
     # TODO: Create Cluster-Mask Point Cloud to visualize each cluster separately
 
     # TODO: Convert PCL data to ROS messages
+    
+    pcl_to_ros_objects = pcl_to_ros(extracted_outliers)
+    pcl_to_ros_table = pcl_to_ros(extracted_inliers)
 
     # TODO: Publish ROS messages
-    pcl_objects_pub.publish(pcl_msg)
-    pcl_table_pub.publish(pcl_msg)
+    pcl_objects_pub.publish(pcl_to_ros_objects)
+    pcl_table_pub.publish(pcl_to_ros_table)
 
 
 if __name__ == '__main__':
