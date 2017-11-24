@@ -24,13 +24,22 @@ if __name__ == '__main__':
     rospy.init_node('capture_node')
 
     models = [\
-       'beer',
-       'bowl',
-       'create',
-       'disk_part',
-       'hammer',
-       'plastic_cup',
-       'soda_can']
+       #'beer',
+       #'bowl',
+       #'create',
+       #'disk_part',
+       #'hammer',
+       #'plastic_cup',
+       #'soda_can'
+       'biscuits',
+       'soap',
+       'soap2',
+       'glue',
+       'sticky_notes',
+       'book',
+       'snacks',
+       'eraser'
+       ]
 
     # Disable gravity and delete the ground plane
     initial_setup()
@@ -39,9 +48,10 @@ if __name__ == '__main__':
     for model_name in models:
         spawn_model(model_name)
 
-        for i in range(70):
+        for i in range(99):
             sample_was_good = False
             try_count = 0
+	    print( (models.index(model_name) + 1), '/ 8 object at', i, '/ 99 iteration')
             while not sample_was_good and try_count < 5:
                 sample_cloud = capture_sample()
                 sample_cloud_arr = ros_to_pcl(sample_cloud).to_array()
@@ -54,8 +64,11 @@ if __name__ == '__main__':
                     sample_was_good = True
 
             # Extract histogram features
+	    print("computing color histogram")
             chists = compute_color_histograms(sample_cloud, using_hsv=True)
+	    print("getting normals")
             normals = get_normals(sample_cloud)
+            print("computing normal histograms")
             nhists = compute_normal_histograms(normals)
             feature = np.concatenate((chists, nhists))
             labeled_features.append([feature, model_name])
